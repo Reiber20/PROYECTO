@@ -1,0 +1,318 @@
+                       // Implementamos variables constantes para el uso de los pines
+const int luzPulsador = 2;
+const int tempPulsador = 3;
+const int garajePulsador = 4;
+
+const int tempPin = A0;
+const int ldrPin = A1;
+const int zumbadorPin = 8;
+
+const int tiempoPuerta=5000;
+
+const int led1Pin = 5;
+const int led2Pin = 6;
+const int led3Pin = 7;
+const int led4Pin = 9;
+const int led5Pin = 10;
+const int led6Pin = 11;
+const int led7Pin = 12;
+
+                        // Implementamos variables que cambiarán durante la secuencia
+int estadoLed6 = 0;
+int estadoLed7 =0;
+int estadoLuzPulsador = 0;
+int estadoTempPulsador = 0;
+int estadoGarajePulsador = 0;
+int estadoTemp = 0;
+int estadoLdr = 0;
+
+int valorldr;
+float temp;
+float tempUmbralCalor = 25;
+float tempUmbralFrio = 10;
+float tempMaxima = 30;
+float tempMinima =5;
+
+
+void setup() {
+  
+                          // Configuramos la velocidad de transmision   
+  Serial.begin(9600);
+                          // Configuramos los pines como entradas o salidas
+  pinMode(luzPulsador, INPUT);
+  pinMode(tempPulsador, INPUT);
+  pinMode(garajePulsador, INPUT);
+  pinMode(tempPin, INPUT);
+  pinMode(ldrPin, INPUT);
+  pinMode(zumbadorPin,OUTPUT);
+  pinMode(led1Pin,OUTPUT);
+  pinMode(led2Pin,OUTPUT);
+  pinMode(led3Pin,OUTPUT);
+  pinMode(led4Pin,OUTPUT);
+  pinMode(led5Pin,OUTPUT);
+  pinMode(led6Pin,OUTPUT);
+  pinMode(led7Pin,OUTPUT);
+
+
+}
+
+void loop() {
+                      // Llamamos a las funciones creadas
+    garaje();
+    iluminacion();
+    termostato();
+    
+     
+}
+                                                      //Creamos funciones para que el programa las lea mejor
+
+void iluminacion () {                               //Esta funcion controla el sensor de temperatura
+
+    estadoLuzPulsador = digitalRead(luzPulsador);           //Leemos el estado del pulsador para la iluminacion
+
+    if (estadoLuzPulsador==HIGH){          //Creamos una funcion condicional para poner pulsador con memoria
+      if (estadoLdr==LOW){
+        estadoLdr=HIGH;
+        Serial.println("===== LDR activo =====");     //Mostramos en el monitor serie que el sensor esta activado
+        delay(200);
+      } else {
+        estadoLdr=LOW;
+        Serial.println("===== LDR apagado =====");      // mostramos en el monitor serie que hemos desactivado el sensor
+        delay(200);
+      }
+    }
+
+    if (estadoLdr==HIGH){                   // Si activamos el sensor se inicializa la secuencia
+      valorldr = analogRead(ldrPin);           // Leemos el valor que nos da el sensor
+      Serial.print("Cantidad de luz: ");
+      Serial.println(valorldr);                //Mostramos en el monitor serie el valor del sensor
+      delay(750);
+
+      if (valorldr <= 200){                 //Si el valor del sensor es menor o igual a 200 se encienden las 3 leds
+        digitalWrite(led1Pin,HIGH);
+        digitalWrite(led2Pin,HIGH);
+        digitalWrite(led3Pin,HIGH);          
+      } else if (valorldr > 200 && valorldr <= 400){       //Si el valor del sensor se encuentra entre 201 y 400 se encienden 2 leds
+        digitalWrite(led1Pin,HIGH);
+        digitalWrite(led2Pin,HIGH);
+        digitalWrite(led3Pin,LOW);
+      } else if (valorldr > 400 && valorldr <= 600){      //Si el valor del sensor esta entre 401 y 600 se enciede solo 1 led
+        digitalWrite(led1Pin,HIGH);
+        digitalWrite(led2Pin,LOW);
+        digitalWrite(led3Pin,LOW);
+      } else {                                         // Si el valor del sensor supera los 600 no se enciende ningun led
+        digitalWrite(led1Pin,LOW);
+        digitalWrite(led2Pin,LOW);
+        digitalWrite(led3Pin,LOW);
+      }
+      
+    } else {                                        //Si desactivamos el sensor se apagan las luces
+      digitalWrite(led1Pin,LOW);
+      digitalWrite(led2Pin,LOW);
+      digitalWrite(led3Pin,LOW);      
+    }
+  
+}
+  
+
+
+
+
+
+
+
+
+
+void garaje () {                     // Esta funcion se comporta como un pulsador con memoria
+  
+  estadoGarajePulsador = digitalRead (garajePulsador);
+
+  if (estadoGarajePulsador == HIGH) {     
+    
+    if (estadoLed6==LOW){
+      
+      delay (200);
+      digitalWrite (led6Pin, HIGH);
+      Serial.println("===== Subiendo puerta =====");
+      delay (tiempoPuerta);
+      Serial.println("===== Puerta abierta =====");
+      estadoLed7=HIGH;
+    }
+    
+     
+    if (estadoLed7==HIGH){                     
+       digitalWrite(led7Pin, estadoLed7);
+       digitalWrite(led6Pin, LOW);
+       estadoLed6=HIGH;
+       
+    }
+
+    if (estadoLed6=HIGH){
+      estadoGarajePulsador = digitalRead (garajePulsador);
+        
+      if (estadoGarajePulsador==HIGH){       
+        delay(200);
+        digitalWrite(led7Pin, LOW);
+        digitalWrite(led6Pin,HIGH);
+        Serial.println("===== Bajando puerta =====");
+        delay(tiempoPuerta);
+        Serial.println("===== Puerta cerrada =====");
+        digitalWrite(led6Pin,LOW);
+        estadoLed6=LOW;
+      }
+    }
+     
+  }  
+            
+}    
+
+
+
+
+
+
+void termostato () {
+
+  estadoTempPulsador = digitalRead (tempPulsador); 
+
+  if (estadoTempPulsador == HIGH){               //Creamos una funcion condicional para el pulsador con memoria
+    if (estadoTemp==LOW){
+      estadoTemp=HIGH;
+      Serial.println("===== Termostato encendido =====");      //Mostramos en el monitro serie que hemos activado el sensor 
+      delay(200);
+    }else{
+      estadoTemp=LOW;
+      Serial.println("===== Termostato apagado =====");        //Mostramos en el monitor serie que el sensor esta desactivado 
+      delay(200);
+    }
+  }
+      
+          
+
+  if (estadoTemp==HIGH){
+  
+        int lectura=analogRead(tempPin);         //Implementamos una variable local para leer el valor del sensor 
+        
+        float voltaje = lectura*5000.0/1023.0;       //Convertimos el valor del sensor en bits en grados Celsius
+      
+        temp = (voltaje/200);                     
+      
+        Serial.print("Temperatura:");
+        Serial.print(temp);                       //Mostramos en el monitor serie el valor del sensor ya con la conversion
+        Serial.println("ºC");
+      
+       
+        Serial.print(tempUmbralCalor);          //Mostramos en el monitor serie los valores para que se enciendan los leds
+        Serial.println("ºC");
+        Serial.print(tempUmbralFrio);
+        Serial.println("ºC");
+        delay(1000);
+       
+      
+        if (temp>tempUmbralCalor){               //Cuando el valor supera el valor umbral establecido entramos en la secuencia
+          digitalWrite(led4Pin,HIGH);
+          Serial.println("Refrigeracion ON");                   
+      
+               if (temp>tempMaxima){               
+                
+                 Serial.println ("===== Alarma activada =====");           //Mostramos en el monitor serie que se activa la alarma
+                
+                 while (temp>tempMaxima){         //Mientras que el valor del sensor sea superior a tempMaxima seguiremos dentro del bucle
+
+                                      
+                    estadoTempPulsador = digitalRead (tempPulsador);
+
+                    if (estadoTempPulsador == HIGH){    // Si pulsamos el pulsador desactivaremos el sensor
+                      break;
+                    }
+                    
+                    digitalWrite(led4Pin,HIGH);
+                  
+                    tone(zumbadorPin,500);     
+                    
+                    delay(400);
+                    
+  
+                    digitalWrite(led4Pin,LOW);          
+                   
+                    tone(zumbadorPin,400);
+                    
+                    delay(400);
+                
+                    
+                    lectura=analogRead(tempPin);
+                    voltaje = lectura*5000.0/1023.0;
+                    temp = (voltaje/200); 
+                    Serial.print("Temperatura:");
+                    Serial.print(temp);
+                    Serial.println("C");                   
+                   
+                  }
+                    
+                       
+                } else {                         //Cuando el valor del sensor baje de la tempMaxima se encendera el led y se apagara el zumbador
+                  digitalWrite(led4Pin,HIGH);     
+                }
+                noTone(zumbadorPin);
+                 
+          
+        }else if (temp>tempUmbralFrio && temp<tempUmbralCalor){                               //Cuando el valor del sensor baje de la tempUmbralCalor se apagara el led
+          digitalWrite(led4Pin,LOW);
+          noTone(zumbadorPin);
+          Serial.println("Refrigeracion OFF");
+        }
+
+        if (temp<tempUmbralFrio){
+          digitalWrite(led5Pin,HIGH);
+          Serial.println("Calefaccion ON");
+      
+               if (temp<tempMinima){
+                
+                 Serial.println ("===== Alarma activada =====");
+                
+                 while (temp<tempMinima){
+
+                                      
+                    estadoTempPulsador = digitalRead (tempPulsador);
+
+                    if (estadoTempPulsador == HIGH){
+                      break;
+                    }
+                    
+                    digitalWrite(led5Pin,HIGH);
+                  
+                    tone(zumbadorPin,400);     
+                    
+                    delay(400);
+                    
+  
+                    digitalWrite(led5Pin,LOW);          
+                   
+                    tone(zumbadorPin, 300);
+                    
+                    delay(400);
+                
+                    
+                    lectura=analogRead(tempPin);
+                    voltaje = lectura*5000.0/1023.0;
+                    temp = (voltaje/200); 
+                    Serial.print("Temperatura:");
+                    Serial.print(temp);
+                    Serial.println("C");                   
+                   
+                  }
+                  noTone (zumbadorPin);  
+                       
+                } else {
+                  digitalWrite(led5Pin,HIGH);     
+                }
+                 
+          
+        }else if (temp>tempUmbralFrio && temp<tempUmbralCalor){
+          digitalWrite(led5Pin,LOW);
+          Serial.println("Calefaccion OFF");
+        }        
+
+  }      
+
+}
