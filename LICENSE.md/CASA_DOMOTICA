@@ -64,6 +64,8 @@ void loop() {
     
      
 }
+
+
                                                       //Creamos funciones para que el programa las lea mejor
 
 void iluminacion () {                               //Esta funcion controla el sensor de temperatura
